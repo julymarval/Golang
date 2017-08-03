@@ -11,12 +11,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/julymarval/services/handlers"
-
 	"github.com/gorilla/mux"
+	"github.com/julymarval/services/handlers"
 )
 
-func main() {
+/**************************** FUNCS *************************/
+
+func startServer() {
 
 	route := mux.NewRouter().StrictSlash(false)
 
@@ -44,4 +45,11 @@ func main() {
 
 	log.Fatal(server.ListenAndServe())
 
+}
+
+/********************************* MAIN *************************/
+
+func main() {
+
+	startServer()
 }

@@ -24,10 +24,10 @@ func LoginHandler(response http.ResponseWriter, request *http.Request) {
 	err := json.NewDecoder(request.Body).Decode(&cred)
 
 	if err != nil {
-		log.Println("Handler - error parsing response")
+		log.Println("Handler - error parsing request")
 	}
 
-	result := manager.Login(cred.Username, cred.Password)
+	result, status := manager.Login(cred.Username, cred.Password)
 
 	bytes := json.RawMessage(result)
 
@@ -37,6 +37,11 @@ func LoginHandler(response http.ResponseWriter, request *http.Request) {
 		log.Println("Handler - error parsing response")
 	}
 
-	response.WriteHeader(http.StatusOK)
+	if status != "ok" {
+		response.WriteHeader(http.StatusInternalServerError)
+	} else {
+		response.WriteHeader(http.StatusOK)
+	}
+
 	response.Write(res)
 }

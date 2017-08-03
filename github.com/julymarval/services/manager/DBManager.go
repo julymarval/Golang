@@ -37,8 +37,7 @@ func InsertData(data []byte) string {
 
 	if err != nil {
 		log.Fatal("cannot dial mongo", err)
-		response := "error"
-		return response
+		return ""
 	}
 
 	defer db.Close() // clean up when we’re done
@@ -50,13 +49,10 @@ func InsertData(data []byte) string {
 
 	if err != nil {
 		log.Println(err)
-		response := "error"
-		return response
+		return ""
 	}
 
-	response := "ok"
-
-	return response
+	return "ok"
 
 }
 
@@ -70,7 +66,7 @@ func SelectData() string {
 
 	if err != nil {
 		log.Fatal("cannot dial mongo", err)
-		return "error"
+		return ""
 	}
 
 	defer db.Close() // clean up when we’re done
@@ -81,30 +77,29 @@ func SelectData() string {
 
 	if err != nil {
 		log.Println(err)
-		return "error"
+		return ""
 	}
 
 	res, err := json.Marshal(result)
 
 	if err != nil {
 		log.Println("Manager - error parsing response")
+		return ""
 	}
 
-	response := DoDataJSONResponse(0, "ok", string(res))
-
-	return response
+	return string(res)
 
 }
 
-// DeleteDataById = func that Deletes a doc in the database
-func DeleteDataById(id string) string {
+// DeleteDataByID = func that Deletes a doc in the database
+func DeleteDataByID(id string) string {
 
 	// connect to the database
 	db, err := mgo.Dial("localhost")
 
 	if err != nil {
 		log.Fatal("cannot dial mongo", err)
-		return "error"
+		return ""
 	}
 
 	defer db.Close() // clean up when we’re done
@@ -116,25 +111,21 @@ func DeleteDataById(id string) string {
 
 	if err != nil {
 		log.Printf("remove fail %v\n", err)
-		response := DoGeneralJSONResponse(900, "internal error")
-		return response
+		return ""
 	}
 
-	response := DoGeneralJSONResponse(0, "ok")
-
-	return response
+	return "ok"
 }
 
-// UpdateDataById = func that updates a single field in the database
-func UpdateDataById(id string, key string, value string) string {
+// UpdateDataByID = func that updates a single field in the database
+func UpdateDataByID(id string, key string, value string) string {
 
 	// connect to the database
 	db, err := mgo.Dial("localhost")
 
 	if err != nil {
 		log.Fatal("cannot dial mongo", err)
-		response := DoGeneralJSONResponse(900, "internal error")
-		return response
+		return ""
 	}
 
 	defer db.Close() // clean up when we’re done
@@ -145,13 +136,10 @@ func UpdateDataById(id string, key string, value string) string {
 
 	if err != nil {
 		log.Printf("update fail %v\n", err)
-		response := DoGeneralJSONResponse(900, "internal error")
-		return response
+		return ""
 	}
 
-	response := DoGeneralJSONResponse(0, "ok")
-
-	return response
+	return "ok"
 }
 
 // SelectDataByID = func that gets a doc by its ID
@@ -164,7 +152,7 @@ func SelectDataByID(id string) string {
 
 	if err != nil {
 		log.Fatal("cannot dial mongo", err)
-		return "error"
+		return ""
 	}
 
 	defer db.Close() // clean up when we’re done
@@ -175,14 +163,14 @@ func SelectDataByID(id string) string {
 
 	if err != nil {
 		log.Println(err)
-		response := DoGeneralJSONResponse(900, "internal error")
-		return response
+		return ""
 	}
 
 	res, err := json.Marshal(result)
 
 	if err != nil {
 		log.Println("Manager - error parsing response")
+		return ""
 	}
 
 	return string(res)
@@ -199,7 +187,7 @@ func SelectDataLogin(id string) string {
 
 	if err != nil {
 		log.Fatal("cannot dial mongo", err)
-		return "error"
+		return ""
 	}
 
 	defer db.Close() // clean up when we’re done
@@ -210,14 +198,14 @@ func SelectDataLogin(id string) string {
 
 	if err != nil {
 		log.Println(err)
-		response := DoGeneralJSONResponse(900, "internal error")
-		return response
+		return ""
 	}
 
 	res, err := json.Marshal(result)
 
 	if err != nil {
 		log.Println("Manager - error parsing response")
+		return ""
 	}
 
 	return string(res)

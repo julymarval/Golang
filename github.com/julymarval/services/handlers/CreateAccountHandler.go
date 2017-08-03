@@ -47,7 +47,7 @@ func CreateAccountHandler(response http.ResponseWriter, requets *http.Request) {
 		log.Println("Error parseando a json")
 	}
 
-	result := manager.CreateAccount(j)
+	result, status := manager.CreateAccount(j)
 
 	bytes := json.RawMessage(result)
 
@@ -57,7 +57,12 @@ func CreateAccountHandler(response http.ResponseWriter, requets *http.Request) {
 		log.Println("Error parseando a json")
 	}
 
-	response.WriteHeader(http.StatusCreated)
+	if status != "ok" {
+		response.WriteHeader(http.StatusInternalServerError)
+	} else {
+		response.WriteHeader(http.StatusCreated)
+	}
+
 	response.Write(res)
 
 }

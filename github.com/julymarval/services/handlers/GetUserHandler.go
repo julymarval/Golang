@@ -15,7 +15,7 @@ func GetUserHandler(response http.ResponseWriter, request *http.Request) {
 
 	var token = request.Header.Get("sessionToken")
 
-	result := manager.GetUser(token)
+	result, status := manager.GetUser(token)
 
 	bytes := json.RawMessage(result)
 
@@ -25,7 +25,12 @@ func GetUserHandler(response http.ResponseWriter, request *http.Request) {
 		log.Println("Handler - error parsing response")
 	}
 
-	response.WriteHeader(http.StatusOK)
+	if status != "ok" {
+		response.WriteHeader(http.StatusInternalServerError)
+	} else {
+		response.WriteHeader(http.StatusOK)
+	}
+
 	response.Write(res)
 
 }

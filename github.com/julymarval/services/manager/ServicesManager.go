@@ -12,6 +12,7 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/julymarval/services/model"
 
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/mgo.v2/bson"
@@ -67,7 +68,7 @@ func generateSessionToken(username string) (string, error) {
 
 	token := jwt.New(jwt.SigningMethodHS512)
 	claims := make(jwt.MapClaims)
-	claims["exp"] = time.Now().Add(time.Minute * 7).Unix()
+	claims["exp"] = time.Now().Add(time.Hour).Unix()
 	claims["username"] = username
 	token.Claims = claims
 
@@ -105,24 +106,32 @@ func validateSessionToken(Token string) (bool, string) {
 }
 
 // CreateAccount = func thats manages user's data and creates an account
-func CreateAccount(data []byte) string {
+func CreateAccount(data []byte) (string, string) {
 
 	var user User
+	var bol = true
 
 	json.Unmarshal(data, &user)
+
+	bol = model.ValidateEmail(user.Email)
+
+	if !bol {
+		response := DoGeneralJSONResponse(model.InvalidInputCode, model.InvalidInputMsg+": Email")
+		return response, "error"
+	}
 
 	search := SelectDataByID(user.Email)
 
 	if search != "" {
-		response := DoGeneralJSONResponse(104, "UserAlreadyExists")
-		return response
+		response := DoGeneralJSONResponse(model.UserAlreadyExistCode, model.UserAlreadyExistMsg)
+		return response, "error"
 	}
 
 	pass := parsePassword(user.Password)
 
 	if pass == "error" {
-		response := DoGeneralJSONResponse(999, "InternalError")
-		return response
+		response := DoGeneralJSONResponse(model.InternalErrorCode, model.InternalErrorMsg)
+		return response, "error"
 	}
 
 	user.Password = pass
@@ -130,68 +139,81 @@ func CreateAccount(data []byte) string {
 	j, err := json.Marshal(user)
 
 	if err != nil {
-		response := DoGeneralJSONResponse(999, "InternalError")
-		return response
+		response := DoGeneralJSONResponse(model.InternalErrorCode, model.InternalErrorMsg)
+		return response, "error"
 	}
 
 	result := InsertData(j)
 
 	if result != "ok" {
-		response := DoGeneralJSONResponse(999, "InternalErrorok")
-		return response
+		response := DoGeneralJSONResponse(model.InternalErrorCode, model.InternalErrorMsg)
+		return response, "error"
 	}
 
-	response := DoGeneralJSONResponse(0, "ok")
-	return response
+	response := DoGeneralJSONResponse(model.OkCode, model.OkMsg)
+	return response, "ok"
 
 }
 
 // Login = func that manages the login service
-func Login(username string, password string) string {
+func Login(username string, password string) (string, string) {
 
 	var user User
 	var tok string
 	var bol = true
+	var isPass = true
+
+	bol = model.ValidateEmail(username)
+
+	if !bol {
+		response := DoGeneralJSONResponse(model.InvalidInputCode, model.InvalidInputMsg+": Email")
+		return response, "error"
+	}
 
 	result := SelectDataLogin(username)
+
+	if result == "" {
+		response := DoGeneralJSONResponse(model.NonExistingUserCode, model.NonExistingUserMsg)
+		return response, "error"
+	}
 
 	resp := json.RawMessage(result)
 
 	bytes, err := resp.MarshalJSON()
 
 	if err != nil {
-		response := DoGeneralJSONResponse(999, "InternalError")
-		return response
+		response := DoGeneralJSONResponse(model.InternalErrorCode, model.InternalErrorMsg)
+		return response, "error"
 	}
 
 	err = json.Unmarshal(bytes, &user)
 
-	bol = unParsePassword([]byte(password), []byte(user.Password))
+	isPass = unParsePassword([]byte(password), []byte(user.Password))
 
-	if !bol {
-		response := DoGeneralJSONResponse(100, "InvalidPassword")
-		return response
+	if !isPass {
+		response := DoGeneralJSONResponse(model.InvalidPasswordCode, model.InvalidPasswordMsg)
+		return response, "error"
 	}
 
 	if err != nil {
-		response := DoGeneralJSONResponse(999, "InternalError")
-		return response
+		response := DoGeneralJSONResponse(model.InternalErrorCode, model.InternalErrorMsg)
+		return response, "error"
 	}
 
 	tok, err = generateSessionToken(username)
 
 	if err != nil {
-		response := DoGeneralJSONResponse(999, "InternalError")
-		return response
+		response := DoGeneralJSONResponse(model.InternalErrorCode, model.InternalErrorMsg)
+		return response, "error"
 	}
 
-	response := DoDataJSONResponse(0, "ok", tok)
-	return response
+	response := DoDataJSONResponse(model.OkCode, model.OkMsg, tok)
+	return response, "ok"
 
 }
 
 // GetUser = func that get a user from database using session token
-func GetUser(token string) string {
+func GetUser(token string) (string, string) {
 
 	var bol = true
 	var username string
@@ -199,51 +221,60 @@ func GetUser(token string) string {
 	bol, username = validateSessionToken(token)
 
 	if !bol {
-		response := DoGeneralJSONResponse(003, "InvalidSessionToken")
-		return response
-	}
-
-	result := SelectDataByID(username)
-
-	response := DoDataJSONResponse(0, "ok", result)
-
-	return response
-}
-
-// ResetPassword = func that updates a pass using session token
-func ResetPassword(token string, pass string, confirm string) string {
-
-	var bol = true
-	var username string
-
-	if pass != confirm {
-		response := DoGeneralJSONResponse(106, "PasswordsMismatch")
-		return response
-	}
-
-	bol, username = validateSessionToken(token)
-
-	if !bol {
-		response := DoGeneralJSONResponse(003, "InvalidSessionToken")
-		return response
+		response := DoGeneralJSONResponse(model.InvalidTokenCode, model.InvalidTokenMsg)
+		return response, "error"
 	}
 
 	result := SelectDataByID(username)
 
 	if result == "" {
-		response := DoGeneralJSONResponse(105, "NonExistingUser")
-		return response
+		response := DoGeneralJSONResponse(model.NonExistingUserCode, model.NonExistingUserMsg)
+		return response, "error"
+	}
+
+	response := DoDataJSONResponse(model.OkCode, model.OkMsg, result)
+
+	return response, "ok"
+}
+
+// ResetPassword = func that updates a pass using session token
+func ResetPassword(token string, pass string, confirm string) (string, string) {
+
+	var bol = true
+	var username string
+
+	if pass != confirm {
+		response := DoGeneralJSONResponse(model.PasswordMismatchCode, model.PasswordMismatchMsg)
+		return response, "error"
+	}
+
+	bol, username = validateSessionToken(token)
+
+	if !bol {
+		response := DoGeneralJSONResponse(model.InvalidTokenCode, model.InvalidTokenMsg)
+		return response, "error"
+	}
+
+	result := SelectDataByID(username)
+
+	if result == "" {
+		response := DoGeneralJSONResponse(model.NonExistingUserCode, model.NonExistingUserMsg)
+		return response, "error"
 	}
 
 	password := parsePassword(pass)
 
 	if password == "error" {
 		response := DoGeneralJSONResponse(999, "InternalError")
-		return response
+		return response, "error"
 	}
 
-	res := UpdateDataById(username, "password", password)
+	res := UpdateDataByID(username, "password", password)
 
-	return res
+	if res != "ok" {
+		return res, "error"
+	}
+
+	return res, "ok"
 
 }

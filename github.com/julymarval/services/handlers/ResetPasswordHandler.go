@@ -29,7 +29,7 @@ func ResetPasswordHandler(response http.ResponseWriter, request *http.Request) {
 		log.Println("Handler - error parsing response")
 	}
 
-	result := manager.ResetPassword(token, pass.NewPassword, pass.ConfirmPassword)
+	result, status := manager.ResetPassword(token, pass.NewPassword, pass.ConfirmPassword)
 
 	bytes := json.RawMessage(result)
 
@@ -39,6 +39,11 @@ func ResetPasswordHandler(response http.ResponseWriter, request *http.Request) {
 		log.Println("Handler - error parsing response")
 	}
 
-	response.WriteHeader(http.StatusOK)
+	if status != "ok" {
+		response.WriteHeader(http.StatusInternalServerError)
+	} else {
+		response.WriteHeader(http.StatusOK)
+	}
+
 	response.Write(res)
 }
